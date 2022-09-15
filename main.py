@@ -70,15 +70,28 @@ def interractiveSession(model):
         if inputString == "exit":
             break
         elif inputString == "train":
-            model.fit(train_inputs, train_outputs, epochs=10)
-            test_loss, test_acc = model.evaluate(
-                test_inputs,  test_outputs, verbose=2)
-            print('\nTest accuracy:', test_acc)
+            model.fit(train_inputs, train_outputs, epochs=1)
             continue
         elif inputString == "save":
             print("Path:")
             path = input()
             model.save(path)
+            continue
+        elif inputString == "evaluate":
+            test_loss, test_acc = model.evaluate(
+                test_inputs,  test_outputs, verbose=2)
+            print('\nTest accuracy:', test_acc)
+            # Find its false-positive and false-negative rate.
+            predictions = model.predict(test_inputs)
+            falsePositives = 0
+            falseNegatives = 0
+            for i in range(len(predictions)):
+                if np.argmax(predictions[i]) == 1 and np.argmax(test_outputs[i]) == 0:
+                    falsePositives += 1
+                elif np.argmax(predictions[i]) == 0 and np.argmax(test_outputs[i]) == 1:
+                    falseNegatives += 1
+            print("False positives: " + str(falsePositives))
+            print("False negatives: " + str(falseNegatives))
             continue
         inputArray = createInput(inputString)
         inputArray = np.array([inputArray])
