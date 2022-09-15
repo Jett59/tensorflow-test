@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 def generateInputForCharacter(char):
     input = [0.0] * 26
     if char.isalpha():
@@ -50,34 +49,52 @@ def loadData():
 (train_inputs, train_outputs), (test_inputs,
                                 test_outputs) = loadData()
 
-model = tf.keras.Sequential([
-    tf.keras.layers.Dense(20 * 26, activation='relu'),
-    tf.keras.layers.Dense(128, activation='relu'),
-    tf.keras.layers.Dense(2, activation='softmax')
-])
 
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+def createModel():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(20 * 26, activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(2, activation='softmax')
+    ])
 
-model.fit(train_inputs, train_outputs, epochs=100)
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+    return model
 
-test_loss, test_acc = model.evaluate(test_inputs,  test_outputs, verbose=2)
-
-print('\nTest accuracy:', test_acc)
 
 # Start an interractive session where the user types in words and the model figures out if they are correctly spelled.
-while True:
-    inputString = input("Enter a word: ")
-    if inputString == "exit":
-        break
-    if inputString == "train":
-        model.fit(train_inputs, train_outputs, epochs=100)
-        test_loss, test_acc = model.evaluate(
-            test_inputs,  test_outputs, verbose=2)
-        print('\nTest accuracy:', test_acc)
-        continue
-    inputArray = createInput(inputString)
-    inputArray = np.array([inputArray])
-    output = model.predict(inputArray)
-    print("Correctly spelled: " + str(output[0][0] > output[0][1]))
+def interractiveSession(model):
+    while True:
+        inputString = input("Enter a word: ")
+        if inputString == "exit":
+            break
+        elif inputString == "train":
+            model.fit(train_inputs, train_outputs, epochs=10)
+            test_loss, test_acc = model.evaluate(
+                test_inputs,  test_outputs, verbose=2)
+            print('\nTest accuracy:', test_acc)
+            continue
+        elif inputString == "save":
+            print("Path:")
+            path = input()
+            model.save(path)
+            continue
+        inputArray = createInput(inputString)
+        inputArray = np.array([inputArray])
+        output = model.predict(inputArray)
+        print("Correctly spelled: " + str(output[0][0] > output[0][1]))
+
+
+print("Load a model or train a new one?")
+print("1. Load a model")
+print("2. Train a new model")
+choice = int(input())
+if choice == 1:
+    print("Enter the path to the model:")
+    modelPath = input()
+    model = tf.keras.models.load_model(modelPath)
+    interractiveSession(model)
+elif choice == 2:
+    model = createModel()
+    interractiveSession(model)
