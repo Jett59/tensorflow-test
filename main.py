@@ -3,14 +3,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def generateInputForCharacter(char):
+    input = [0.0] * 26
+    if char.isalpha():
+        input[ord(char) - ord('a')] = 1.0
+    return input
+
+
 def createInput(inputString):
-    inputArray = []
+    inputCharacters = []
     for char in inputString:
-        inputArray.append(float(ord(char) / 255.0))
+        inputCharacters.append(char)
     # Fill to 20 characters.
     for i in range(20 - len(inputString)):
-        inputArray.append(0)
-    return inputArray
+        inputCharacters.append(' ')
+    # Generate the inputs using generateInputForCharacter on each of the inputCharacters.
+    inputs = []
+    for char in inputCharacters:
+        input = generateInputForCharacter(char)
+        for value in input:
+            inputs.append(value)
+    return inputs
 
 
 def createOutput(outputString):
@@ -28,7 +41,7 @@ def loadData():
         inputs.append(createInput(inputWords[0]))
         outputs.append(createOutput(inputWords[1]))
     trainingInputs = np.array(inputs[:int(len(inputs) * 0.8)])
-    trainingOutputs = np.array( outputs[:int(len(outputs) * 0.8)])
+    trainingOutputs = np.array(outputs[:int(len(outputs) * 0.8)])
     testingInputs = np.array(inputs[int(len(inputs) * 0.8):])
     testingOutputs = np.array(outputs[int(len(outputs) * 0.8):])
     return (trainingInputs, trainingOutputs), (testingInputs, testingOutputs)
@@ -38,17 +51,16 @@ def loadData():
                                 test_outputs) = loadData()
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(20, activation='relu'),
+    tf.keras.layers.Dense(20 * 26, activation='relu'),
     tf.keras.layers.Dense(128, activation='relu'),
     tf.keras.layers.Dense(2, activation='softmax')
 ])
 
 model.compile(optimizer='adam',
-                loss='categorical_crossentropy',
-                metrics=['accuracy'])
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
 
-model.fit(train_inputs, train_outputs, epochs=20)
-print("Finished training.")
+model.fit(train_inputs, train_outputs, epochs=100)
 
 test_loss, test_acc = model.evaluate(test_inputs,  test_outputs, verbose=2)
 
@@ -59,6 +71,12 @@ while True:
     inputString = input("Enter a word: ")
     if inputString == "exit":
         break
+    if inputString == "train":
+        model.fit(train_inputs, train_outputs, epochs=100)
+        test_loss, test_acc = model.evaluate(
+            test_inputs,  test_outputs, verbose=2)
+        print('\nTest accuracy:', test_acc)
+        continue
     inputArray = createInput(inputString)
     inputArray = np.array([inputArray])
     output = model.predict(inputArray)
