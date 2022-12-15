@@ -7,19 +7,22 @@ INPUT_INDICES = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.
 
 INPUT_CHARACTER_SIZE = len(INPUT_INDICES)
 
+# Use a smaller data type for the outputArray array
 def generateInputsForCharacter(character, outputArray):
     index = INPUT_INDICES.find(character)
     if index == -1:
         raise Exception("Invalid character: " + character + " (" + str(ord(character)) + ")")
-    outputArray[index] = 1
+    outputArray[index] = np.int8(1)
     return outputArray
 
 
+# Use a smaller data type for the inputs array
 def getCharacterForInput(inputs):
     index = np.argmax(inputs)
     return INPUT_INDICES[index]
 
 
+# Use a smaller data type for the outputArray array
 def generateInputsForString(str, outputArray):
     index = 0
     stringLength = len(str)
@@ -30,15 +33,17 @@ def generateInputsForString(str, outputArray):
     return outputArray
 
 
-INPUT_SIZE = 500
+INPUT_SIZE = 200
 OUTPUT_SIZE = 1
 
 
 def loadData(path="articles.txt"):
     with open(path) as f:
         data = f.read()
-        inputs = np.zeros((len(data) // (INPUT_SIZE + OUTPUT_SIZE), INPUT_SIZE, INPUT_CHARACTER_SIZE))
-        outputs = np.zeros((len(data) // (INPUT_SIZE + OUTPUT_SIZE), OUTPUT_SIZE, INPUT_CHARACTER_SIZE))
+        # Use a smaller data type for the inputs array
+        inputs = np.zeros((len(data) // (INPUT_SIZE + OUTPUT_SIZE), INPUT_SIZE, INPUT_CHARACTER_SIZE), dtype=np.int8)
+        # Use a smaller data type for the outputs array
+        outputs = np.zeros((len(data) // (INPUT_SIZE + OUTPUT_SIZE), OUTPUT_SIZE, INPUT_CHARACTER_SIZE), dtype=np.int8)
         i = 0
         for offset in range(0, len(data) - INPUT_SIZE - OUTPUT_SIZE, INPUT_SIZE + OUTPUT_SIZE):
             generateInputsForString(data[offset:offset+INPUT_SIZE], inputs[i])
@@ -67,7 +72,6 @@ def createModel():
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
 
-
 def loadModel():
     global model
     model = models.load_model(input("Model path: ").strip())
@@ -83,13 +87,13 @@ else:
 while True:
     inputString = input("Type the beginning: ")
     if inputString == "train":
-        model.fit(trainingInputs, trainingOutputs, epochs=1, batch_size=1)
+        model.fit(trainingInputs, trainingOutputs, epochs=1, batch_size=64)
         print(model.evaluate(testingInputs, testingOutputs))
         continue
     if inputString == "save":
         models.save_model(model, input("Model path: ").strip())
         continue
-    modelInput = np.zeros((INPUT_SIZE, INPUT_CHARACTER_SIZE))
+    modelInput = np.zeros((INPUT_SIZE, INPUT_CHARACTER_SIZE), dtype=np.int8)
     generateInputsForString(inputString.rjust(INPUT_SIZE, " "), modelInput)
     tempModelInput = modelInput
     outputCharacterCount = 0
