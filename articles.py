@@ -3,17 +3,21 @@ from tensorflow.keras import layers
 from tensorflow.keras import models
 import numpy as np
 
-INPUT_CHARACTER_SIZE = 128
+INPUT_INDICES = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:?! \n"
 
+INPUT_CHARACTER_SIZE = len(INPUT_INDICES)
 
 def generateInputsForCharacter(character, outputArray):
-    if ord(character) != 0:
-        outputArray[ord(character)] = 1.0
+    index = INPUT_INDICES.find(character)
+    if index == -1:
+        raise Exception("Invalid character: " + character + " (" + str(ord(character)) + ")")
+    outputArray[index] = 1
     return outputArray
 
 
 def getCharacterForInput(inputs):
-    return chr(np.argmax(inputs))
+    index = np.argmax(inputs)
+    return INPUT_INDICES[index]
 
 
 def generateInputsForString(str, outputArray):
@@ -26,7 +30,7 @@ def generateInputsForString(str, outputArray):
     return outputArray
 
 
-INPUT_SIZE = 100
+INPUT_SIZE = 500
 OUTPUT_SIZE = 1
 
 
@@ -56,7 +60,6 @@ def createModel():
     global model
     model = models.Sequential()
     model.add(layers.Dense(INPUT_SIZE * INPUT_CHARACTER_SIZE, activation='relu'))
-    model.add(layers.Dense(INPUT_SIZE * INPUT_CHARACTER_SIZE / 4, activation='relu'))
     model.add(layers.Dense(OUTPUT_SIZE *
               INPUT_CHARACTER_SIZE, activation='softmax'))
 
@@ -67,7 +70,7 @@ def createModel():
 
 def loadModel():
     global model
-    model = models.load_model(input("Model path: "))
+    model = models.load_model(input("Model path: ").strip())
 
 
 requestedAction = input("1 to load or 2 to start afresh")
@@ -80,23 +83,20 @@ else:
 while True:
     inputString = input("Type the beginning: ")
     if inputString == "train":
-        print(trainingInputs.shape, trainingOutputs.shape)
-        model.fit(trainingInputs, trainingOutputs, epochs=1, batch_size=256)
+        model.fit(trainingInputs, trainingOutputs, epochs=1, batch_size=1)
         print(model.evaluate(testingInputs, testingOutputs))
         continue
     if inputString == "save":
-        model.save(input("Model path: "))
+        models.save_model(model, input("Model path: ").strip())
         continue
     modelInput = np.zeros((INPUT_SIZE, INPUT_CHARACTER_SIZE))
-    generateInputsForString(inputString.rjust(INPUT_SIZE, "\0"), modelInput)
+    generateInputsForString(inputString.rjust(INPUT_SIZE, " "), modelInput)
     tempModelInput = modelInput
     outputCharacterCount = 0
-    while outputCharacterCount < 500:
+    while outputCharacterCount < 200:
         rawOutput = model(tempModelInput.reshape(
             1, INPUT_SIZE * INPUT_CHARACTER_SIZE), training=False)
         outputCharacter = getCharacterForInput(rawOutput)
-        if outputCharacter == '\0':
-            break
         print(outputCharacter, end="", flush=True)
         characterOutputArray = np.zeros(INPUT_CHARACTER_SIZE)
         tempModelInput = np.append(
